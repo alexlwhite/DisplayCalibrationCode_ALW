@@ -23,17 +23,16 @@ clear; close all; clear mex;
 screenName = 'DISC_scannerProjector_Eiki_LCXL100A';
 
 %name to save this as:
-calDataFile = 'DISC_Projector';
+calDataFile = 'DISC_Projector_1280x1024';
  
 %file with normalized luminance lookup table to load, if checking for
 %linearity (measure  = 0)
 lookupTableFile = '';
-
 %number of luminance steps between 0 and 255:
 nSteps = 9;
 
 %number of cycles through all colors. Final values are then averaged:
-nReps = 2;
+nReps = 1;
 
 %whether to measure uncorrected luminacne or check corrected luminance
 measure = 1; % 1 for measuring, 0 for checking
@@ -57,10 +56,12 @@ bitsPlusPlus = 0;
 
 screenSize = [33 24];
 resolution = [1024 768];
-viewingDistance = 66; 
+refreshRate = 60;
+viewingDistance = 66;
+
 
 info.location = 'MR scanner projector @ HSB, tested in other room';
-info.lighting = 'dark, lights off';
+info.lighting = 'lights off';
 
 info.projector.ThrowDistance = 295;
 info.projector.brightness = 24;
@@ -119,11 +120,12 @@ calDataFile = sprintf('%s_%s.mat',calDataFile,date);
 if  ~measure
     calibFile = lookupTableFile;
     load(calibFile);
-    ngt = displayInfo.normlzdGammaTable;
+    ngt = calib.normlzdGammaTable;
     
     if size(ngt,2)==1
         ngt = repmat(ngt,1,3);
     end
+    clear calib;
 end
 
 %% Open screen
@@ -240,6 +242,7 @@ calib.lookupTableFile = lookupTableFile;
 calib.measureOrCheck = measure;
 calib.screenSize = screenSize;
 calib.resolution = resolution;
+calib.refreshRate = refreshRate;
 calib.viewingDistance = viewingDistance; 
 calib.info = info;
 
@@ -270,6 +273,7 @@ if doFitGamma
         lums = meanLuminance(4,:)';
         [calib.normlzdGammaTable_Gray, calib.fitGamma_Gray] = alwMakeNormGammaTable(screenLevels, lums, method, showFig);
     end
-    
+    calib.fitMethod = method;
+
     save(calDataFile,'calib')
 end
