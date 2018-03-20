@@ -24,10 +24,10 @@ screenName = 'DISC_scannerProjector_Eiki_LCXL100A';
 
 %name to save this as:
 calDataFile = 'DISC_Projector_1024x768';
- 
-%file with normalized luminance lookup table to load, if checking for
-%linearity (measure  = 0)
-lookupTableFile = '';
+
+%whether to measure each color channel separately or grayscale
+separateColors = 1; % 1 for RGB+grayscale, 0 for grayscale
+
 %number of luminance steps between 0 and 255:
 nSteps = 9;
 
@@ -37,8 +37,9 @@ nReps = 2;
 %whether to measure uncorrected luminacne or check corrected luminance
 measure = 1; % 1 for measuring, 0 for checking
 
-%whether to measure each color channel separately or grayscale
-separateColors = 1; % 1 for RGB+grayscale, 0 for grayscale
+%file with normalized luminance lookup table to load, if checking for
+%linearity (measure  = 0)
+lookupTableFile = '';
 
 %whether to collect and store measured luminance values typed in the command
 %window:
@@ -60,7 +61,7 @@ refreshRate = 60;
 viewingDistance = 66;
 
 
-info.location = 'MR scanner projector @ DISC, tested in control room, connected to FMRI computer''s input';
+info.location = 'MR scanner projector @ DISC, tested in control room, connected to fMRI computer''s input';
 info.lighting = 'lights off';
 
 info.projector.ThrowDistance = 295;
@@ -113,8 +114,22 @@ else
     lookupTableFile = '';
 end
 
+%% set where to store
+codeFolder = fileparts(which('SimpleScreenCalibration'));
+resFolder = fullfile(codeFolder,'results');
+if ~exist(resFolder,'dir')
+    mkdir(resFolder);
+end
+addpath(resFolder);
 calDataFile = sprintf('%s_%s.mat',calDataFile,date);
+figName = sprintf('%s_%s.fig',calDataFile,date);
+figNameGray = sprintf('%s_%s_Gray.fig',calDataFile,date);
+figNameAdd= sprintf('%s_%s_Additivity.fig',calDataFile,date);
 
+calDataFile = fullfile(resFolder,calDataFile);
+figName = fullfile(resFolder,figName);
+figNameGray = fullfile(resFolder,figNameGray);
+figNameAdd = fullfile(resFolder,figNameAdd);
 
 %% Load in a normalized gamma table to check linearity
 if  ~measure
@@ -225,6 +240,7 @@ if separateColors
     ylabel('luminance measured');
     legend({'R+G+B','Gray'},'location','NorthWest');
     title('check for additivity of color channels');
+    savefig(figNameAdd);
 end
 
 %% save raw data
@@ -265,13 +281,18 @@ if doFitGamma
     
     [calib.normlzdGammaTable, calib.fitGamma] = alwMakeNormGammaTable(screenLevels, lums, method, showFig);
     if showFig
-        subplot(1,3,1); title(date);
+        subplot(1,3,1); title(['Raw data, ' date]);
+        savefig(figName);
     end
     
     %do that again for white if also done for separate colors
     if separateColors
         lums = meanLuminance(4,:)';
         [calib.normlzdGammaTable_Gray, calib.fitGamma_Gray] = alwMakeNormGammaTable(screenLevels, lums, method, showFig);
+        if showFig
+            subplot(1,3,1); title(['Raw data, ' date]);
+            savefig(figNameGray);
+        end
     end
     calib.fitMethod = method;
 
