@@ -23,7 +23,7 @@ clear; close all; clear mex;
 screenName = 'DISC_scannerProjector_Eiki_LCXL100A';
 
 %name to save this as:
-calDataFile = 'DISC_Projector_1280x1024';
+calDataFile = 'DISC_Projector_1024x768';
  
 %file with normalized luminance lookup table to load, if checking for
 %linearity (measure  = 0)
@@ -32,13 +32,13 @@ lookupTableFile = '';
 nSteps = 9;
 
 %number of cycles through all colors. Final values are then averaged:
-nReps = 1;
+nReps = 2;
 
 %whether to measure uncorrected luminacne or check corrected luminance
 measure = 1; % 1 for measuring, 0 for checking
 
 %whether to measure each color channel separately or grayscale
-separateColors = 0; % 1 for RGB+grayscale, 0 for grayscale
+separateColors = 1; % 1 for RGB+grayscale, 0 for grayscale
 
 %whether to collect and store measured luminance values typed in the command
 %window:
@@ -54,13 +54,13 @@ missingLumVal = 0.5;
 %% other parameters about this screen that you want to save
 bitsPlusPlus = 0;
 
-screenSize = [33 24];
+screenSize = [32 24.5];
 resolution = [1024 768];
 refreshRate = 60;
 viewingDistance = 66;
 
 
-info.location = 'MR scanner projector @ HSB, tested in other room';
+info.location = 'MR scanner projector @ DISC, tested in control room, connected to FMRI computer''s input';
 info.lighting = 'lights off';
 
 info.projector.ThrowDistance = 295;
