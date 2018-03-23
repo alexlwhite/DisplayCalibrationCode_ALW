@@ -49,6 +49,8 @@ recordLums = true;
 doFitGamma = true;
 
 %what to do with missing values at low luminance, for fitting purposes? 
+%if the photometer returns no value b/c too dark, enter NaN and then those
+%values will be replaced by the following: 
 missingLumVal = 0.5;
 %Leaving at NaN runs a risk of exaggerating gamma fit value. 
 
@@ -68,7 +70,7 @@ info.projector.ThrowDistance = 295;
 info.projector.brightness = 24;
 info.projector.contrast = 32;
 info.projector.iris = 'off';
-info.projector.color_temp = 'mild';
+info.projector.color_temp = 'mid';
 info.projector.red = 32;
 info.projector.green = 32;
 info.projector.blue = 32; 
