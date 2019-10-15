@@ -1,29 +1,29 @@
- %% SimpleScreenCalibration: simple code to display different luminance values for monitor calibration.
+%% SimpleScreenCalibration: simple code to display different luminance values for monitor calibration.
 % Written by Michael-Paul Schallmo, adapted by Alex White, March 2017
 %
 % This script uses Psychtoolbox to present full-screen fields of colors of increasing brightness to measure
-% with a photometer. It can do grayscale only (separateColors = false) or grascale + each color gun 
+% with a photometer. It can do grayscale only (separateColors = false) or grascale + each color gun
 % separately (separateColors = true).
-% It optionally records measured luminance values typed into the comamnd line (if recordLums = true). 
+% It optionally records measured luminance values typed into the comamnd line (if recordLums = true).
 % After a keystroke, it presents a field of purple for 1 s and then
-% presents the next color. 
-% 
+% presents the next color.
+%
 % It can also fit a gama function and generate a noramlized lookup table to
-% linearize the screen. 
-% 
+% linearize the screen.
+%
 % Saves all results in a file called "calib"
 % Finally, it can load in a normalized luminance table to check if the correction
-% worked (if measure = 0). 
+% worked (if measure = 0).
 
-clear; close all; clear mex;  
+clear; close all; clear mex;
 
 %% Choices:
 
 %screen name
-screenName = 'DISC_scannerProjector_Eiki_LCXL100A';
+screenName = 'ViewPixxEEG';
 
 %name to save this as:
-calDataFile = 'DISC_Projector_1024x768';
+calDataFile = 'ViewPixxEEG';
 
 %whether to measure each color channel separately or grayscale
 separateColors = 1; % 1 for RGB+grayscale, 0 for grayscale
@@ -39,7 +39,7 @@ measure = 1; % 1 for measuring, 0 for checking
 
 %file with normalized luminance lookup table to load, if checking for
 %linearity (measure  = 0)
-lookupTableFile = '';
+lookupTableFile = 'ViewPixxEEG_RGBW_15-Oct-2019.mat';
 
 %whether to collect and store measured luminance values typed in the command
 %window:
@@ -48,39 +48,28 @@ recordLums = true;
 %whether to fit gamma functions and generate normalized lookup table
 doFitGamma = true;
 
-%what to do with missing values at low luminance, for fitting purposes? 
+%what to do with missing values at low luminance, for fitting purposes?
 %if the photometer returns no value b/c too dark, enter NaN and then those
-%values will be replaced by the following: 
+%values will be replaced by the following:
 missingLumVal = 0.5;
-%Leaving at NaN runs a risk of exaggerating gamma fit value. 
+%Leaving at NaN runs a risk of exaggerating gamma fit value.
 
+%whether to print input luminance values to screen and require an
+%additional keypress to confirm (if you don't have a secondary display to
+%see the Matlab command window.
+printLumsToScreen = true;
 %% other parameters about this screen that you want to save
 bitsPlusPlus = 0;
 
-screenSize = [32 24.5];
-resolution = [1024 768];
-refreshRate = 60;
-viewingDistance = 66;
+screenSize = [53 29.8];
+resolution = [1920 1080];
+refreshRate = 120;
+viewingDistance = 70;
 
 
-info.location = 'MR scanner projector @ DISC, tested in control room, connected to fMRI computer''s input';
-info.lighting = 'lights off';
+info.location = 'CERAS 126';
+info.lighting = 'lights on';
 
-info.projector.ThrowDistance = 295;
-info.projector.brightness = 24;
-info.projector.contrast = 32;
-info.projector.iris = 'off';
-info.projector.color_temp = 'mid';
-info.projector.red = 32;
-info.projector.green = 32;
-info.projector.blue = 32; 
-info.projector.offset = 'blank';
-info.projector.sharpness = 0;
-info.projector.gamma = 8;
-
-info.neutral_density_filter.value = 0.6; 
-info.neutral_density_filter.name = 'two stop';
-info.neutral_density_filter.distance_from_lens = 61;
 
 
 %% other parameters of procedure:
@@ -105,7 +94,7 @@ if separateColors
     luminance = NaN(3,nSteps,nReps);
     calDataFile = [calDataFile '_RGBW'];
 else
-    nChannels = 1;
+    nChannelfs = 1;
     luminance = NaN(1,nSteps,nReps);
     calDataFile = [calDataFile '_Gray'];
 end
@@ -132,6 +121,8 @@ calDataFile = fullfile(resFolder,calDataFile);
 figName = fullfile(resFolder,figName);
 figNameGray = fullfile(resFolder,figNameGray);
 figNameAdd = fullfile(resFolder,figNameAdd);
+
+acceptKeys = [KbName('Return') KbName('Space')];
 
 %% Load in a normalized gamma table to check linearity
 if  ~measure
@@ -199,16 +190,37 @@ try %% this try/catch/end stuff is in here for OS X in case something crashes ..
                 Screen('FillRect',window,color);
                 Screen('Flip',window);
                 FlushEvents('KeyDown');
-
+                
                 if stepDuration>0
                     WaitSecs(stepDuration);
                 else
                     if recordLums
-                        gotLum = false;
-                        while ~gotLum
-                            lum = input('Enter luminance:  ');
-                            gotLum = isnumeric(lum) && ~isempty(lum);
-                            if gotLum, gotLum = lum>=0 || isnan(lum) ; end
+                        
+                        acceptLum = false;
+                        while ~acceptLum
+                            gotLum = false;
+                            while ~gotLum
+                                lum = input('Enter luminance:  ');
+                                gotLum = isnumeric(lum) && ~isempty(lum);
+                                if gotLum, gotLum = lum>=0 || isnan(lum) ; end
+                            end
+                            
+                            if printLumsToScreen
+                                Screen('DrawText',window,sprintf('%.3f. Return to accept, space to re-do.',lum), screenRect(3)/2 - 9*fontSize,screenRect(4)/2 - fontSize/2,fontColor,backgroundColor);
+                                Screen('Flip',window);
+                                WaitSecs(0.5); FlushEvents('KeyDown');
+                                keyPressed = 0;
+                                while keyPressed==0
+                                    keyPressed = checkTarPress(acceptKeys);
+                                end
+                                acceptLum = keyPressed==1;
+                                if ~acceptLum
+                                    Screen('FillRect',window,color);
+                                    Screen('Flip',window);
+                                end
+                            else
+                                acceptLum = true;
+                            end
                         end
                         luminance(channelI,step,rep) = lum;
                     else
@@ -261,7 +273,7 @@ calib.measureOrCheck = measure;
 calib.screenSize = screenSize;
 calib.resolution = resolution;
 calib.refreshRate = refreshRate;
-calib.viewingDistance = viewingDistance; 
+calib.viewingDistance = viewingDistance;
 calib.info = info;
 
 save(calDataFile,'calib')
@@ -297,6 +309,6 @@ if doFitGamma
         end
     end
     calib.fitMethod = method;
-
+    
     save(calDataFile,'calib')
 end
